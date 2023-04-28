@@ -1,5 +1,5 @@
 # Clustering-via-Jenks-Natural-Breaks-Matlab
-Example on using the Jenks Natural Breaks method to cluster a one-dimensional data array into two classes.
+Example on using the Jenks Natural Breaks method to cluster a one-dimensional data array into two classes using MATLAB.
 
 Jenks Natural Breaks is a data clustering method. It is an optimization process that finds the best arrangement of values into different classes. 
 It can be used for step-change detection in noisy data. 
