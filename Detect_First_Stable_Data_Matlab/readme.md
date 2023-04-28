@@ -1,4 +1,4 @@
-# Detect a stable stream of measurements 
+# Detect the first stable stream of measurements arriving from a sensor 
 
 While streaming data from a sensor, it is often desired to detect the first set of stable measurments. This set could be represented as an array of values having a Mean Absolute Error (MAE) that is less than a certain threshold. This indicates their stability. 
 
