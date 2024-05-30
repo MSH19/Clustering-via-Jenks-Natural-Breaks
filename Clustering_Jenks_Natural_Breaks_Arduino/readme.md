@@ -8,4 +8,8 @@ Input: one-dimensional data array
 
 Output: 
 - array 1: elements belonging to class 1
-- array 2: elements belonging to class 2 
+- array 2: elements belonging to class 2
+
+Please cite this code as: Mahdi Saleh, “Clustering via Jenks Natural Breaks,” 2020, doi: 10.13140/RG.2.2.14166.68167.
+
+
