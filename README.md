@@ -1,6 +1,6 @@
-# Sensor-Signal-Analysis
+# Clustering via Jenks Natural Breaks
 
-A set of tools for processing and analyzing sensor signals.   
+Processing and analyzing sensor signals.   
 
 The codes are developed using MATLAB, ARDUINO, and Nordic nRF SoC modules.
 
