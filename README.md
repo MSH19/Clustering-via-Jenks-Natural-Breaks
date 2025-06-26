@@ -19,7 +19,7 @@ Mahdi Saleh, “Evaluation of Jenks Natural Breaks Clustering Algorithm for Chan
 
 **Original Code DOI (ResearchGate)**  
 Mahdi Saleh, “Clustering via Jenks Natural Breaks,” 2020.  
-**DOI:** [10.13140/RG.2.2.14166.68167](https://www.researchgate.net/publication/344473509_Clustering_via_Jenks_Natural_Breaks)
+**DOI:** [10.13140/RG.2.2.14166.68167](https://www.researchgate.net/publication/344616195_Clustering_via_Jenks_Natural_Breaks)
 
 ---
 
