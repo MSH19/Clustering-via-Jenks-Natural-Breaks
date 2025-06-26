@@ -1,7 +1,25 @@
 # Clustering via Jenks Natural Breaks
 
 Processing and analyzing sensor signals using Jenks Natural Breaks Clustering.  
-Developed using MATLAB, ARDUINO, and C-based Nordic nRF SoC modules.
+Developed using MATLAB, Arduino, and C-based Nordic nRF SoC modules.
+
+---
+
+## 📂 Folder Structure and Implementation Details
+
+This repository contains several implementations of the **Jenks Natural Breaks (JNB)** clustering algorithm applied to sensor data changepoint detection:
+
+- **Arduino/**  
+  1D JNB implementation for microcontrollers using the Arduino platform.
+
+- **Matlab/**  
+  1D JNB algorithm implemented in MATLAB for offline or batch processing of sensor signals.
+
+- **nRF52832/**  
+  C-based 1D JNB implementation optimized for Nordic nRF52832 SoC devices.
+
+- **Matlab_2D/**  
+  Extends JNB to 2D signals, demonstrated on Human Activity Recognition (HAR) accelerometer data from the UCI dataset, for multidimensional changepoint detection and visualization.
 
 ---
 
