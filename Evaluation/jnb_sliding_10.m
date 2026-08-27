@@ -1,115 +1,121 @@
-clc;
-clear all;
-close all;
+clc; clear; close all;
 
-filename = 'dataset.xlsx';
-sheet = 'Sheet1';
+% Load test data
+x = load('total_acc_x_test.txt');
+y = load('total_acc_y_test.txt');
+z = load('total_acc_z_test.txt');
+labels = load('y_test.txt');
+n_windows = size(x,1);
 
-% read the data into a table
-data = readtable(filename, 'Sheet', sheet);
+% Compute smoothed magnitude
+mean_mag = mean(sqrt(x.^2 + y.^2 + z.^2), 2);
+smoothed_mag = movmean(mean_mag, 5);
 
-% extract the column of the time instants 
-t = data{:, 1};
+% Parameters
+win_size = 150; step = 5; min_dist = 5;
 
-% define sliding window settings 
-window_size = 10;
-step_size = 5;
+% --- Jenks Method (max GF only) ---
+best_idxs_jenks = detect_sliding_max(@get_jenks_interface, smoothed_mag, win_size, step, min_dist, true);
 
-% define the signals length
-data_length = height(data);
-% total_size = 250; in this dataset 
+% --- Differential Method ---
+diff_signal = [0; diff(smoothed_mag).^2];
+thresh = mean(diff_signal) + std(diff_signal);
+best_idxs_diff = find(diff_signal > thresh);
+best_idxs_diff = best_idxs_diff([true; diff(best_idxs_diff) > min_dist]);
 
-% Initialize an empty cell array to store the windowed data
-temporal_window_set = {};
-temporal_instants_set = {};
+% Ground truth
+true_transitions = find(diff(labels) ~= 0);
 
-% define an array to store the overall results 
-overall_results = [];
+% Binary signals
+binary_true  = to_binary(labels);
+binary_jenks = to_binary_from_idxs(best_idxs_jenks, n_windows);
+binary_diff  = to_binary_from_idxs(best_idxs_diff, n_windows);
 
-% loop into each signals, apply the algorithm and save the results 
-for s=1:1:12
+% Plot
+figure;
+plot(binary_true, 'k', 'LineWidth', 1.3); hold on;
+plot(binary_jenks, 'r--', 'LineWidth', 1.3);
+plot(binary_diff, 'b-.', 'LineWidth', 1.3);
+ylim([-0.2 1.2]); xlabel('Window Index'); ylabel('Binary State');
+legend('Ground Truth', 'Jenks (max GF)', 'Differential');
+title('Transition Detection: Jenks vs Differential');
 
-    % define the column name as mentioned in the data 
-    signalName = ['S', num2str(s)];
+% Evaluate
+evaluate_and_print(true_transitions, best_idxs_jenks, 'Jenks (max GF)');
+evaluate_and_print(true_transitions, best_idxs_diff, 'Differential');
 
-    % extract signal 
-    signal = data{:, signalName};
+% --- FUNCTIONS ---
 
-    % Initialize the index for the cell array
-    temporal_window_index = 1;
-    temporal_instants_index = 1;
+function best_idxs = detect_sliding_max(func_handle, data, win, step, min_dist, use_threshold)
+    best_idxs = [];
+    for i = 1:step:(length(data) - win)
+        segment = data(i:i + win - 1);
+        [~, GF] = func_handle(segment);
 
-    % Loop through the data array with the sliding window
-    for start_index = 1:step_size:(data_length - window_size + 1)
-    
-        % Get the end index of the current window
-        end_index = start_index + window_size - 1;
-    
-        % Extract the windowed segment
-        current_window = signal(start_index:end_index);
-        current_instants = t(start_index:end_index);
-    
-        % Store the windowed segment in the cell array
-        temporal_window_set{temporal_window_index} = current_window;
-        temporal_instants_set{temporal_instants_index} = current_instants;
-    
-        % Increment the window index
-        temporal_window_index = temporal_window_index + 1;
-        temporal_instants_index = temporal_instants_index + 1;
-    end
-
-    iterations = temporal_window_index - 1;
-
-    % create an empty array to hold the results 
-    results = zeros(1, iterations);
-    max_GVFs = zeros(1, iterations); 
-    change_checks = zeros(1, iterations);
-
-    for results_counter=1:iterations
-        
-        temporal_signal = temporal_window_set{results_counter};
-        temporal_instants = temporal_instants_set{results_counter};
-        
-        if (abs(max(temporal_signal) - min(temporal_signal)) >= 5)
-
-            % set 1 to the array of change checks 
-            change_checks (results_counter) = 1;
-
-            % get the change point 
-            [change, mGF] = getChangePoint(temporal_signal);
- 
-            % add the detected index and GVF value to the results arrays
-            max_GVFs (results_counter) = mGF;
-            results(results_counter) = temporal_instants(change);
+        if use_threshold
+            threshold = 0.3 * max(GF);
+            if max(GF) < threshold
+                continue;
+            end
         end
 
-    end % end for 
+        [~, peak] = max(GF);
+        global_idx = i + peak - 1;
+        best_idxs = [best_idxs; global_idx];
+    end
+    best_idxs = unique(best_idxs);
+    best_idxs = best_idxs([true; diff(best_idxs) > min_dist]);
+end
 
-    overall_results = [overall_results; change_checks; results; max_GVFs];
+function [SDCM, GF] = get_jenks_interface(A)
+    total = length(A);
+    SDCM = zeros(1,total); GF = zeros(1,total);
+    SDAM = sum((A - mean(A)).^2);
+    for i = 1:total-1
+        s1 = sum((A(1:i) - mean(A(1:i))).^2);
+        s2 = sum((A(i+1:end) - mean(A(i+1:end))).^2);
+        SDCM(i) = s1 + s2;
+        GF(i) = (SDAM - SDCM(i)) / SDAM;
+    end
+end
 
-end 
+function binary = to_binary(labels)
+    binary = zeros(length(labels), 1); s = 0; binary(1) = s;
+    for i = 2:length(labels)
+        if labels(i) ~= labels(i-1), s = 1 - s; end
+        binary(i) = s;
+    end
+end
 
-% Define the filename for the Excel file
-filename = ['overall_results_10_sliding_jnba.xlsx'];
+function binary = to_binary_from_idxs(idxs, n)
+    binary = zeros(n, 1); s = 0; binary(1) = s;
+    for i = 2:n
+        if ismember(i, idxs), s = 1 - s; end
+        binary(i) = s;
+    end
+end
 
-% Write the results to the Excel file
-writematrix(overall_results, filename);
-
-disp ('Results created'); 
-
-%% Function to call JNB method and return the changePoint
-function [changePoint, maxGF] = getChangePoint(inputArray)
-
-% get number of elements in the array
-total = length (inputArray);
-
-% apply the JNB method to get the interface between the two classes 
-[SDCM_All, GF] = get_jenks_interface(inputArray);
-
-% get the index that has the maximum Goodness of Variance Fit 
-[M, I] = max(GF);
-
-changePoint = I;
-maxGF = M;
-
-end % end function
+function evaluate_and_print(true_transitions, detected_idxs, method_name)
+    tolerance = 3; TP = 0; FP = 0;
+    for i = 1:length(true_transitions)
+        if any(abs(detected_idxs - true_transitions(i)) <= tolerance)
+            TP = TP + 1;
+        end
+    end
+    FN = length(true_transitions) - TP;
+    for i = 1:length(detected_idxs)
+        if all(abs(true_transitions - detected_idxs(i)) > tolerance)
+            FP = FP + 1;
+        end
+    end
+    precision = TP / max((TP + FP), eps);
+    recall    = TP / max((TP + FN), eps);
+    F1 = 2 * precision * recall / max((precision + recall), eps);
+    fprintf('\n--- %s Detection Evaluation ---\n', method_name);
+    fprintf('True Positives: %d\n', TP);
+    fprintf('False Positives: %d\n', FP);
+    fprintf('False Negatives: %d\n', FN);
+    fprintf('Precision: %.2f\n', precision);
+    fprintf('Recall   : %.2f\n', recall);
+    fprintf('F1 Score : %.2f\n', F1);
+end
